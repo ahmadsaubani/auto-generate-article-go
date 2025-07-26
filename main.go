@@ -12,6 +12,11 @@ func main() {
 	gin.DisableConsoleColor()
 	ginEngine := gin.Default()
 
+	// hidupkan jika development
+	// if err := godotenv.Load(); err != nil {
+	// 	panic("Error loading .env file: " + err.Error())
+	// }
+
 	db := database.ConnectDatabase()
 
 	// Run migrations

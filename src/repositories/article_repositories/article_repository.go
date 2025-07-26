@@ -75,7 +75,7 @@ func (r *articleRepository) FindCategoryByValue(value string) (*categories.Categ
 
 	err := helpers.FindOneByField(&category, "value", value)
 	if err != nil {
-		return nil, fmt.Errorf("product size not found: %w", err)
+		return nil, fmt.Errorf("category not found: %w", err)
 	}
 	return &category, nil
 }
@@ -85,7 +85,7 @@ func (r *articleRepository) FindArticleByURL(value string) (*articles.Article, e
 
 	err := helpers.FindOneByField(&article, "url", value)
 	if err != nil {
-		return nil, fmt.Errorf("product size not found: %w", err)
+		return nil, fmt.Errorf("article not found: %w", err)
 	}
 	return &article, nil
 }
