@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"news-go/src/configs/database"
 	"news-go/src/controllers/api/v1/article_controllers"
+	"news-go/src/middlewares"
 	"news-go/src/repositories/article_repositories"
 	"news-go/src/services/article_services"
 
@@ -15,7 +16,7 @@ func API(db *database.DBConnection, ginEngine *gin.Engine) *gin.Engine {
 	articleRepository := article_repositories.NewArticleRepository()
 	articleService := article_services.NewArticleService(articleRepository)
 
-	// ginEngine.Use(middlewares.CorsMiddleware())
+	ginEngine.Use(middlewares.CorsMiddleware())
 
 	v1 := ginEngine.Group("/api/v1")
 	{
