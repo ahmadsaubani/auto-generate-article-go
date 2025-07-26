@@ -6,16 +6,16 @@ import (
 	"news-go/src/seeders"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+//	"github.com/joho/godotenv"
 )
 
 func main() {
 	gin.DisableConsoleColor()
 	ginEngine := gin.Default()
 
-	if err := godotenv.Load(); err != nil {
-		panic("Error loading .env file: " + err.Error())
-	}
+//	if err := godotenv.Load(); err != nil {
+//		panic("Error loading .env file: " + err.Error())
+//	}
 
 	db := database.ConnectDatabase()
 
@@ -24,7 +24,7 @@ func main() {
 
 	seeders.Run(db)
 	r := routes.API(db, ginEngine)
-	if err := r.Run(":9000"); err != nil {
+	if err := r.Run(":3000"); err != nil {
 		panic("Error starting server: " + err.Error())
 	}
 
