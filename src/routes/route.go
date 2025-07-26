@@ -18,7 +18,7 @@ func API(db *database.DBConnection, ginEngine *gin.Engine) *gin.Engine {
 	articleService := article_services.NewArticleService(articleRepository)
 
 	ginEngine.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost", "http://127.0.0.1"}, // Bisa tambah domain lain
+		AllowOrigins:     []string{"http://localhost", "http://127.0.0.1", "https://api-go.ahmadsaubani.com", "https://ahmadsaubani.com"}, // Bisa tambah domain lain
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},

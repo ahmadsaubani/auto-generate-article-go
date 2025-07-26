@@ -6,16 +6,11 @@ import (
 	"news-go/src/seeders"
 
 	"github.com/gin-gonic/gin"
-//	"github.com/joho/godotenv"
 )
 
 func main() {
 	gin.DisableConsoleColor()
 	ginEngine := gin.Default()
-
-//	if err := godotenv.Load(); err != nil {
-//		panic("Error loading .env file: " + err.Error())
-//	}
 
 	db := database.ConnectDatabase()
 
