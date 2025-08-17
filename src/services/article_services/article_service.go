@@ -10,6 +10,8 @@ import (
 	"news-go/src/helpers"
 	"news-go/src/repositories/article_repositories"
 	"os"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -64,42 +66,90 @@ func (s *articleService) GetAll(ctx *gin.Context, pag helpers.PaginationParams) 
 }
 
 func (s *articleService) FetchAndSaveArticles(ctx *gin.Context) error {
-	baseURL, _ := url.Parse("https://api.thenewsapi.com/v1/news/all")
+	baseURL := "https://api.thenewsapi.com/v1/news/all"
 	apiToken := os.Getenv("API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("API_TOKEN is missing in environment")
 	}
-	params := url.Values{}
-	params.Add("api_token", apiToken)
-	params.Add("categories", "general,science,business,tech,sports,travel")
-	params.Add("language", "en")
 
-	baseURL.RawQuery = params.Encode()
-	resp, err := http.Get(baseURL.String())
-	if err != nil {
-		return err
+	// misalnya mau ambil 2 page
+	totalPages := 3
+	limit := 3
+
+	var (
+		wg       sync.WaitGroup
+		mu       sync.Mutex
+		allErr   error
+		allItems []articles.Article
+	)
+
+	for page := 1; page <= totalPages; page++ {
+		wg.Add(1)
+
+		go func(p int) {
+			defer wg.Done()
+
+			// buat query param
+			params := url.Values{}
+			params.Add("api_token", apiToken)
+			params.Add("categories", "general,science,business,tech,sports,travel")
+			params.Add("language", "en")
+			params.Add("page", strconv.Itoa(p))
+			params.Add("limit", strconv.Itoa(limit))
+
+			reqURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
+
+			resp, err := http.Get(reqURL)
+			if err != nil {
+				mu.Lock()
+				allErr = err
+				mu.Unlock()
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				mu.Lock()
+				allErr = fmt.Errorf("page %d: unexpected status %s", p, resp.Status)
+				mu.Unlock()
+				return
+			}
+
+			var news ArticleResponse
+			if err := json.NewDecoder(resp.Body).Decode(&news); err != nil {
+				mu.Lock()
+				allErr = err
+				mu.Unlock()
+				return
+			}
+
+			var tmp []articles.Article
+			for _, item := range news.Data {
+				pubTime, _ := time.Parse(time.RFC3339, item.PublishedAt)
+
+				tmp = append(tmp, articles.Article{
+					Title:         item.Title,
+					Description:   item.Description,
+					URL:           item.URL,
+					ImageURL:      item.ImageURL,
+					CategoryNames: item.Categories,
+					PublishedAt:   pubTime,
+					Source:        item.Source,
+				})
+			}
+
+			// gabung hasilnya, thread-safe
+			mu.Lock()
+			allItems = append(allItems, tmp...)
+			mu.Unlock()
+		}(page)
 	}
-	defer resp.Body.Close()
 
-	var news ArticleResponse
-	if err := json.NewDecoder(resp.Body).Decode(&news); err != nil {
-		return err
+	wg.Wait()
+
+	if allErr != nil {
+		return allErr
 	}
 
-	var articlesList []articles.Article
-	for _, item := range news.Data {
-		pubTime, _ := time.Parse(time.RFC3339, item.PublishedAt)
-
-		articlesList = append(articlesList, articles.Article{
-			Title:         item.Title,
-			Description:   item.Description,
-			URL:           item.URL,
-			ImageURL:      item.ImageURL,
-			CategoryNames: item.Categories,
-			PublishedAt:   pubTime,
-			Source:        item.Source,
-		})
-	}
-
-	return s.repo.SaveArticles(ctx, articlesList)
+	return s.repo.SaveArticles(ctx, allItems)
 }
